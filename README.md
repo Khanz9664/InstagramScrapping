@@ -1,7 +1,6 @@
 # InstagramScrapping
 
-Create a .env file in root directory of project and add these lines:
+Open Terminal and Run:
 
-`INSTAGRAM_USERNAME=username`
+`python main.py`
 
-`INSTAGRAM_PASSWORD=password`
