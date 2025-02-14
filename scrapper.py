@@ -63,16 +63,10 @@ def scrape_instagram_profile(username):
 
         
                 try:
-                    caption_element = page.locator("h1").first
+                    caption_element = page.locator("div.xt0psk2 h1").first
                     caption = caption_element.inner_text() if caption_element else "No Caption"
                 except:
                     caption = "No Caption"
-
-                try:
-                    likes_element = page.locator("span[role='button']").first
-                    likes = likes_element.inner_text() if likes_element else "Likes not found"
-                except:
-                    likes = "Likes not found"
 
                 try:
                     likes_element = page.locator("span[role='button']").first
@@ -86,7 +80,11 @@ def scrape_instagram_profile(username):
                 except:
                     comments = []
 
-                hashtags = [word for word in caption.split() if word.startswith("#")]
+                try:
+                    hashtags_elements = page.locator("a[href*='/explore/tags/']").all()
+                    hashtags = [hashtag.inner_text() for hashtag in hashtags_elements if hashtag.inner_text()]
+                except:
+                    hashtags = []
                 
                 try:
                     image_element = page.locator("article img").first
