@@ -163,18 +163,18 @@ def scrape_profile(page, username):
         for _ in range(5):
             page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
             time.sleep(3)
-            
+
             new_height = page.evaluate("document.body.scrollHeight")
             if new_height == previous_height:
               break
             previous_height = new_height
 
         # posts = page.locator("a.x1i10hfl").all()  
-        posts = page.locator("a").all()
+        posts = page.locator("article a").all()
         print(f"Found {len(posts)} links on the page")
         # Extract only Instagram post links (filtering by "/p/")
         post_links = [
-        post.get_attribute("href") 
+        f"https://www.instagram.com{post.get_attribute('href')}" 
         for post in posts 
         if post.get_attribute("href") and "/p/" in post.get_attribute("href")]
 
@@ -228,6 +228,7 @@ def scrape_profile(page, username):
                     "hashtags": hashtags,
                     "image_url": image_url
                 })
+                print(post_data)
             except Exception as e:
                 print(f"Error scraping {link}: {e}")
         # Close Browser
