@@ -67,13 +67,13 @@ INSTAGRAM_SELECTORS = {
 
 # File Output Configuration
 OUTPUT_CONFIG = {
-    'default_filename': "instagram_data",
-    'format': "excel",  # Options: excel, csv, json
-    'sheet_name': "Scraped Data",
-    'timestamp': True,  # Add timestamp to filename
+    'default_filename': 'instagram_data',
+    'format': 'excel',  # 'excel', 'csv', or 'json'
+    'timestamp': True,
+    'profile_sheet': 'Profiles',
+    'posts_sheet': 'Posts'
 }
 
-# Supported file extensions
 FILE_EXTENSIONS = {
     'excel': '.xlsx',
     'csv': '.csv',

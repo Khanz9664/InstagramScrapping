@@ -233,7 +233,10 @@ def scrape_profile(page, username):
                 print(f"Error scraping {link}: {e}")
         # Close Browser
         print("🚀 Browser closed")
-        return post_data
+        return {
+        "profile": profile_data,
+        "posts": post_data
+        }
 
 def scrape_instagram_profile(username, context):
     try:
