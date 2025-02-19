@@ -125,16 +125,25 @@ def scrape_profile(page, username):
         page.goto(url)
         time.sleep(5)
 
-        # Extract Profile Data
+        # Extract Profile Data  
         try:
             print(" Extracting profile details...")
-            elements = page.locator("header section div").all_inner_texts()
-            name = elements[1] if len(elements) > 1 else "N/A"
-            bio = elements[18] if len(elements) > 18 else "N/A"
-            posts = elements[14] if len(elements) > 14 else "N/A"
-            followers = elements[15] if len(elements) > 15 else "N/A"
-            following = elements[16] if len(elements) > 16 else "N/A"
+            # elements = page.locator("header section div").all_inner_texts()
+            # name = elements[1] if len(elements) > 1 else "N/A"
+            # bio = elements[18] if len(elements) > 18 else "N/A"
+            # posts = elements[14] if len(elements) > 14 else "N/A"
+            # followers = elements[15] if len(elements) > 15 else "N/A"
+            # following = elements[16] if len(elements) > 16 else "N/A"
+            name_element = page.locator("header h2").first
+            name = name_element.inner_text() if name_element else "N/A"
 
+            bio_element = page.locator("header section div").nth(1)
+            bio = bio_element.inner_text() if bio_element else "N/A"
+
+            stats_elements = page.locator("header section ul li").all()
+            posts = stats_elements[0].inner_text() if len(stats_elements) > 0 else "N/A"
+            followers = stats_elements[1].inner_text() if len(stats_elements) > 1 else "N/A"
+            following = stats_elements[2].inner_text() if len(stats_elements) > 2 else "N/A"
 
             profile_data = {
                 "Name": name,
@@ -150,23 +159,34 @@ def scrape_profile(page, username):
         except Exception as e:
             print(f" Error extracting profile: {e}")
         
+        previous_height = page.evaluate("document.body.scrollHeight")
         for _ in range(5):
             page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
             time.sleep(3)
+            
+            new_height = page.evaluate("document.body.scrollHeight")
+            if new_height == previous_height:
+              break
+            previous_height = new_height
 
-        posts = page.locator("a.x1i10hfl").all()  
-        # posts = page.locator("article a[href]").all()
-        post_links = [post.get_attribute("href") for post in posts if post.get_attribute("href")]
-        
+        # posts = page.locator("a.x1i10hfl").all()  
+        posts = page.locator("a").all()
+        print(f"Found {len(posts)} links on the page")
+        # Extract only Instagram post links (filtering by "/p/")
+        post_links = [
+        post.get_attribute("href") 
+        for post in posts 
+        if post.get_attribute("href") and "/p/" in post.get_attribute("href")]
+
         if not post_links:
-            print("No posts found.")
-            return []
+          print("No posts found.")
+          return []
 
         post_data=[]
 
         for link in post_links[:5]: 
             try:
-                page.goto(f"https://www.instagram.com{link}",   timeout=60000)
+                page.goto(link, timeout=60000)
                 time.sleep(3)
 
         
@@ -201,7 +221,7 @@ def scrape_profile(page, username):
                     image_url = "No Image"
                     
                 post_data.append({
-                    "post_url": f"https://www.instagram.com{link}",
+                    "post_url": link,
                     "caption": caption,
                     "likes": likes,
                     "comments": comments,
@@ -212,6 +232,7 @@ def scrape_profile(page, username):
                 print(f"Error scraping {link}: {e}")
         # Close Browser
         print("🚀 Browser closed")
+        return post_data
 
 def scrape_instagram_profile(username, context):
     try:
