@@ -1,6 +1,6 @@
 from playwright.sync_api import sync_playwright
 from scrapper import scrape_instagram_profile
-from data_handler import save_to_excel
+from data_handler import save_to_file  # Changed import
 from anti_detect import apply_anti_detection
 from config import (
     TARGET_USERNAMES,
@@ -21,20 +21,23 @@ def main():
         )
         
         page = context.new_page()
-        apply_anti_detection(page)  # Strengthened anti-detection
+        apply_anti_detection(page)
         
-        scraped_data = []
+        all_profiles = []
+        all_posts = []
         for username in TARGET_USERNAMES:
             print(f"🔍 Scraping profile: {username}")
-            if data := scrape_instagram_profile(username, context):
-                scraped_data.append(data)
+            if scraped_data := scrape_instagram_profile(username, context):
+                if 'profile' in scraped_data:
+                    all_profiles.append(scraped_data['profile'])
+                if 'posts' in scraped_data:
+                    all_posts.extend(scraped_data['posts'])
         
-        if scraped_data:
-            save_to_excel(scraped_data)
-            print(f"✅ Saved {len(scraped_data)} profiles")
+        if all_profiles or all_posts:
+            save_to_file(all_profiles, all_posts)  # Updated call
+            print(f"✅ Saved {len(all_profiles)} profiles and {len(all_posts)} posts")
         
         browser.close()
 
 if __name__ == "__main__":
     main()
-
