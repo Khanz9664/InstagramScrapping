@@ -19,9 +19,9 @@ JSON: Two separate files—one for profile information and another for post-rela
 
 ## Installation
 
-Open CMD/Terminal 
+1. Open CMD/Terminal 
 
-Clone the Repository:
+2. Clone the Repository:
 
 ```
 git clone https://github.com/ImmortalSoftwareSolutions/InstagramScrapping.git
@@ -29,17 +29,16 @@ git clone https://github.com/ImmortalSoftwareSolutions/InstagramScrapping.git
 cd InstagramScrapping
 ```
 
----
 
 ## Usage
 
-To run the scraper, execute:
+1. To run the scraper, execute:
 
 ```
 python main.py
 ```
 
-Open Browser And Visit:
+2. Open Browser And Visit:
 ```
 http://127.0.0.1:5000
 ```
