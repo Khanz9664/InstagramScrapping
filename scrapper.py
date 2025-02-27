@@ -158,7 +158,7 @@ def scrape_profile(page, username):
             try:
                 commenters = []
                 comments_elements = page.locator("ul li").all()
-                for comment in comments_elements[:20]:
+                for comment in comments_elements[:]:
                     raw_comment = comment.inner_text()
                     cleaned = ' '.join(
                         part.strip()

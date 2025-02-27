@@ -1,68 +1,55 @@
+from flask import Flask, request, jsonify
 from playwright.sync_api import sync_playwright
 from scrapper import scrape_instagram_profile
-from data_handler import save_to_file  # Changed import for saving data
 from anti_detect import apply_anti_detection
-from config import (
-    TARGET_USERNAMES,
-    BROWSER_CONFIG,
-    VIEWPORT_CONFIG,
-    get_random_user_agent
-)
+from config import BROWSER_CONFIG, VIEWPORT_CONFIG, get_random_user_agent
+from data_handler import save_to_file  # Added to restore file-saving functionality
 import random
+import logging
 
-def main():
-    # Print a message to indicate the scraper is starting
-    print("🚀 Starting Instagram Scraper (No Login Required)...")
+app = Flask(__name__)
+logger = logging.getLogger(__name__)  # Set up logging for error handling
+
+@app.route('/')
+def index():
+    return app.send_static_file('index.html')
+
+@app.route('/scrape', methods=['POST'])
+def scrape():
+    data = request.get_json()
+    username = data.get('username')
     
-    # Launch Playwright and use a synchronous context
+    if not username:
+        return jsonify({'error': 'Username is required'}), 400
+
+    print(f"🚀 Scraping Instagram profile: {username}")
+    
     with sync_playwright() as p:
-        # Launch the Chromium browser with the specified configuration
         browser = p.chromium.launch(**BROWSER_CONFIG)
-        
-        # Create a new browser context with a random user-agent and viewport
         context = browser.new_context(
-            user_agent=get_random_user_agent(),  # Get a random user-agent for this session
-            viewport=random.choice(VIEWPORT_CONFIG['presets'])  # Pick a random viewport size
+            user_agent=get_random_user_agent(),
+            viewport=random.choice(VIEWPORT_CONFIG['presets'])
         )
-        
-        # Open a new page in the created context
         page = context.new_page()
-        
-        # Apply anti-detection measures to avoid bot detection
         apply_anti_detection(page)
         
-        # Initialize lists to store the scraped profile and post data
-        all_profiles = []
-        all_posts = []
+        scraped_data = scrape_instagram_profile(username, context)
         
-        # Loop through the target Instagram usernames
-        for username in TARGET_USERNAMES:
-            print(f"🔍 Scraping profile: {username}")
-            
-            # Call the function to scrape data from the Instagram profile
-            # It returns a dictionary with 'profile' and 'posts' data
-            if scraped_data := scrape_instagram_profile(username, context):
-                
-                # If profile data is found, append it to the all_profiles list
-                if 'profile' in scraped_data:
-                    all_profiles.append(scraped_data['profile'])
-                
-                # If post data is found, extend the all_posts list
-                if 'posts' in scraped_data:
-                    all_posts.extend(scraped_data['posts'])
-        
-        # Check if there is any data to save (either profiles or posts)
-        if all_profiles or all_posts:
-            # Save the scraped data to a file
-            save_to_file(all_profiles, all_posts)  # Updated call for saving data
-            # Print a message indicating how many profiles and posts were saved
-            print(f"✅ Saved {len(all_profiles)} profiles and {len(all_posts)} posts")
-        
-        # Close the browser once the scraping process is done
         browser.close()
+        
+        if not scraped_data:
+            return jsonify({'error': 'Failed to scrape data'}), 500
+        
+        # Save the scraped data to files as in the original setup
+        try:
+            # Wrap profile in a list since save_to_file expects a list of profiles
+            save_to_file([scraped_data['profile']], scraped_data['posts'], filename=username)
+            print(f"✅ Saved data for {username}")
+        except Exception as e:
+            logger.error(f"❌ Failed to save data for {username}: {str(e)}")
+            # Continue to return data even if saving fails
+        
+        return jsonify(scraped_data)
 
-# The entry point of the script
 if __name__ == "__main__":
-    # Call the main function to start the scraping process
-    main()
-
+    app.run(debug=True)
