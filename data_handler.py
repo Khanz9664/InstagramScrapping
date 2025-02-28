@@ -6,68 +6,71 @@ from typing import List, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
-def save_to_file(profiles: List[Dict], posts: List[Dict], filename: str = None) -> None:
+def save_to_file(profiles: List[Dict], posts: List[Dict], filename: Optional[str] = None) -> None:
     """
-    Saves scraped data to file with separate storage for profiles and posts
-    - Excel: Single file with two sheets
-    - CSV/JSON: Separate files for profiles and posts
+    Saves scraped data to files in Excel, CSV, and JSON formats.
+    - Excel: Single file with two sheets (Profiles and Posts)
+    - CSV: Separate files for profiles and posts
+    - JSON: Separate files for profiles and posts
+
+    Args:
+        profiles (List[Dict]): List of dictionaries containing profile data.
+        posts (List[Dict]): List of dictionaries containing post data.
+        filename (Optional[str]): Base filename for output files. If not provided, defaults to the value from OUTPUT_CONFIG.
     """
     try:
+        # Check if there is any data to save, if not, log a warning and return
         if not profiles and not posts:
             logger.warning("⚠️ No data to save")
             return
 
-        # Generate base filename with timestamp if enabled
+        # Generate base filename with timestamp if enabled in OUTPUT_CONFIG
         base_name = filename or OUTPUT_CONFIG['default_filename']
         if OUTPUT_CONFIG['timestamp']:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             base_name = f"{base_name}_{timestamp}"
 
-        # Handle different file formats
-        file_format = OUTPUT_CONFIG['format']
-        extension = FILE_EXTENSIONS.get(file_format, '.xlsx')
-
-        if file_format == 'excel':
-            filename = f"{base_name}{extension}"
-            with pd.ExcelWriter(filename) as writer:
-                if profiles:
-                    pd.DataFrame(profiles).to_excel(
-                        writer, 
-                        sheet_name=OUTPUT_CONFIG.get('profile_sheet', 'Profiles'), 
-                        index=False
-                    )
-                if posts:
-                    pd.DataFrame(posts).to_excel(
-                        writer, 
-                        sheet_name=OUTPUT_CONFIG.get('posts_sheet', 'Posts'), 
-                        index=False
-                    )
-            logger.info(f"✅ Saved data to Excel file: {filename}")
-
-        elif file_format in ['csv', 'json']:
-            # Save as separate files for profiles and posts
+        # Save data to Excel format: Single file with two sheets (Profiles and Posts)
+        excel_filename = f"{base_name}{FILE_EXTENSIONS['excel']}"
+        with pd.ExcelWriter(excel_filename) as writer:
+            # Save profiles data to Excel if profiles are provided
             if profiles:
-                profile_filename = f"{base_name}_profiles{extension}"
-                df_profile = pd.DataFrame(profiles)
-                if file_format == 'csv':
-                    df_profile.to_csv(profile_filename, index=False)
-                else:
-                    df_profile.to_json(profile_filename, orient='records')
-                logger.info(f"✅ Saved profile data to {profile_filename}")
-
+                pd.DataFrame(profiles).to_excel(
+                    writer, 
+                    sheet_name=OUTPUT_CONFIG.get('profile_sheet', 'Profiles'), 
+                    index=False
+                )
+            # Save posts data to Excel if posts are provided
             if posts:
-                post_filename = f"{base_name}_posts{extension}"
-                df_post = pd.DataFrame(posts)
-                if file_format == 'csv':
-                    df_post.to_csv(post_filename, index=False)
-                else:
-                    df_post.to_json(post_filename, orient='records')
-                logger.info(f"✅ Saved post data to {post_filename}")
+                pd.DataFrame(posts).to_excel(
+                    writer, 
+                    sheet_name=OUTPUT_CONFIG.get('posts_sheet', 'Posts'), 
+                    index=False
+                )
+        logger.info(f"✅ Saved data to Excel file: {excel_filename}")
 
-        else:
-            logger.error(f"❌ Unsupported file format: {file_format}")
-            raise ValueError(f"Unsupported format: {file_format}")
+        # Save data to CSV format: Separate files for profiles and posts
+        if profiles:
+            profile_csv_filename = f"{base_name}_profiles{FILE_EXTENSIONS['csv']}"
+            pd.DataFrame(profiles).to_csv(profile_csv_filename, index=False)
+            logger.info(f"✅ Saved profile data to CSV file: {profile_csv_filename}")
+        if posts:
+            post_csv_filename = f"{base_name}_posts{FILE_EXTENSIONS['csv']}"
+            pd.DataFrame(posts).to_csv(post_csv_filename, index=False)
+            logger.info(f"✅ Saved post data to CSV file: {post_csv_filename}")
+
+        # Save data to JSON format: Separate files for profiles and posts
+        if profiles:
+            profile_json_filename = f"{base_name}_profiles{FILE_EXTENSIONS['json']}"
+            pd.DataFrame(profiles).to_json(profile_json_filename, orient='records')
+            logger.info(f"✅ Saved profile data to JSON file: {profile_json_filename}")
+        if posts:
+            post_json_filename = f"{base_name}_posts{FILE_EXTENSIONS['json']}"
+            pd.DataFrame(posts).to_json(post_json_filename, orient='records')
+            logger.info(f"✅ Saved post data to JSON file: {post_json_filename}")
 
     except Exception as e:
+        # Log error if saving data fails
         logger.error(f"❌ Failed to save data: {str(e)}")
-        raise
+        raise  # Re-raise the exception after logging it
+
