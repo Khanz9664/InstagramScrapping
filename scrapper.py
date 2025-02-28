@@ -57,7 +57,6 @@ def scrape_profile(page, username):
     posts = page.locator("article a").all()
     print(f"Found {len(posts)} links on the page")
 
-    # Extract only Instagram post links (filtering by "/p/")
     post_links = [
         f"https://www.instagram.com{post.get_attribute('href')}" 
         for post in posts 
@@ -92,21 +91,54 @@ def scrape_profile(page, username):
                 likes = 0
 
             # Clean comments
+            page.wait_for_selector("ul li", timeout=10000)
+            comments = []
             try:
-                comments = []
-                comments_elements = page.locator("ul li").all()
-                for comment in comments_elements[:20]:  # Get top 20 comments
-                    raw_comment = comment.inner_text()
-                    cleaned = ' '.join([
-                        part.strip()
-                        for part in raw_comment.split('\n')[0].split()
-                        if not part.startswith(('#', '@')) and not part.isdigit()
-                    ]).replace('Reply', '').strip()
+               comment_elements = page.locator("ul li").all()
+               comm_count=len(comment_elements)
+               print(f"The comments count are:{comm_count}")
+               for comment in comment_elements[:20]:  
+                  try:
+                        username_element = comment.locator("h3 a").first()
+                        username = username_element.inner_text().strip() if username_element else             "Unknown"
+            
+                        # Extract comment text
+                        comment_text_element = comment.locator("span").first()
+                        comment_text = comment_text_element.inner_text().strip() if comment_text_element else ""
 
-                    if cleaned and len(cleaned) > 3:
-                        comments.append(cleaned)
-            except:
+                        # Ensure valid comment data
+                        if comment_text and not comment_text.startswith(("Reply", "#", "@")):
+                         comments.append({"username": username, "comment": comment_text})
+                  except Exception as inner_e:
+                        print(f"Error extracting a comment: {inner_e}")
+
+               print("Extracted Comments:", comments)
+            except Exception as e:
+                print(f"Error extracting comments: {e}")
                 comments = []
+
+            try:
+                comments_count_element = page.locator("div[role='button'] span").nth(1)
+
+                if comments_count_element:
+                    comments_count_text = comments_count_element.inner_text().strip()
+                    print(f"Raw Comments Count Text: {comments_count_text}")  
+        
+                    # Extract only digits
+                    comment_count_digits = ''.join(filter(str.isdigit, comments_count_text))
+
+                    if comment_count_digits:
+                        comments_count = int(comment_count_digits)
+                        print(f"Total number of comments: {comments_count}")
+                    else:
+                        print("Comments count text is empty or non-numeric.")
+                        comments_count = 0
+                else:
+                    print("Comments count element not found.")
+                    comments_count = 0
+
+            except Exception as e:
+                print(f"Error extracting comments count: {e}")
 
             # Hashtags
             try:
@@ -128,7 +160,7 @@ def scrape_profile(page, username):
                 "post_url": link,
                 "caption": caption,
                 "likes": likes,
-                "comments": comments[:20],  # Ensure max 20 comments
+                "comments": comments[:20],
                 "hashtags": hashtags,
                 "image_url": image_url
             })
