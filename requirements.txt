@@ -5,3 +5,4 @@ ipykernel
 numpy
 matplotlib
 scikit-learn
+flask
