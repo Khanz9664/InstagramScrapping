@@ -9,104 +9,199 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --primary-color: #007bff;
-            --secondary-color: #6c757d;
-            --bg-color: #f8f9fa;
+            --primary-color: #0095f6;
+            --secondary-color: #737373;
+            --accent-color: #db2b74;
+            --bg-color: #fafafa;
             --card-bg: #ffffff;
-            --text-color: #333333;
+            --text-color: #262626;
+            --shadow: 0 5px 15px rgba(0,0,0,0.08);
+            --border-radius: 20px;
         }
 
         body {
             background: var(--bg-color);
             color: var(--text-color);
-            font-family: 'Segoe UI', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
             margin: 0;
-            padding: 20px;
+            padding: 30px;
+            line-height: 1.6;
         }
 
         .dashboard-container {
-            max-width: 1400px;
+            max-width: 1500px;
             margin: 0 auto;
         }
 
         .header {
-            background: linear-gradient(135deg, var(--primary-color), #6610f2);
+            background: linear-gradient(45deg, #405de6, #5851db, #833ab4, #c13584, #e1306c, #fd1d1d);
             color: white;
-            padding: 2rem;
-            border-radius: 15px;
+            padding: 2.5rem;
+            border-radius: var(--border-radius);
             margin-bottom: 2rem;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: rgba(255,255,255,0.1);
+            transform: rotate(30deg);
         }
 
         .search-card {
             background: var(--card-bg);
-            padding: 1.5rem;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
             margin-bottom: 2rem;
+            border: 1px solid rgba(0,0,0,0.05);
         }
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 1.5rem;
             margin-bottom: 2rem;
         }
 
         .stat-card {
             background: var(--card-bg);
-            padding: 1.5rem;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.05);
         }
 
         .stat-card:hover {
             transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
         }
 
         .stat-icon {
-            font-size: 2rem;
+            font-size: 2.2rem;
             color: var(--primary-color);
             margin-bottom: 1rem;
+            background: rgba(0,149,246,0.1);
+            padding: 0.8rem;
+            border-radius: 12px;
         }
 
         .visualization-section {
             background: var(--card-bg);
-            padding: 1.5rem;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
             margin-bottom: 2rem;
+            border: 1px solid rgba(0,0,0,0.05);
         }
 
         .posts-table-container {
             background: var(--card-bg);
-            padding: 1.5rem;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
             overflow-x: auto;
+            border: 1px solid rgba(0,0,0,0.05);
         }
 
         .btn-primary {
             background: var(--primary-color);
             border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 25px;
+            padding: 0.8rem 2rem;
+            border-radius: 30px;
             transition: all 0.3s ease;
+            font-weight: 600;
         }
 
         .btn-primary:hover {
-            background: #0056b3;
+            background: #0078c9;
             transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,149,246,0.3);
         }
 
         .table {
             background: white;
-            border-radius: 10px;
+            border-radius: 15px;
+            margin-bottom: 0;
+        }
+
+        .table thead th {
+            border-bottom: 2px solid rgba(0,0,0,0.05);
+            background-color: #262626; /* Dark background like in your image */
+            color: white; /* White text like in your image */
+            font-weight: bold; /* Bold headings */
+            padding: 1.2rem 1rem;
+        }
+
+        .table td {
+            vertical-align: middle;
+            padding: 1rem;
+            border-top: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .post-preview {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            transition: transform 0.3s ease;
+        }
+
+        .post-preview:hover {
+            transform: scale(1.05);
+        }
+
+        .post-caption {
+            max-width: 300px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-color); /* Default text color, not bold */
+        }
+
+        .post-stats {
+            color: var(--accent-color); /* Accent color for Likes and Comments, not bold */
+        }
+
+        .hashtag-badge {
+            background: rgba(219, 43, 116, 0.1);
+            color: var(--accent-color);
+            padding: 0.3rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            margin: 0.2rem;
+            display: inline-block;
         }
 
         canvas {
             max-height: 400px;
+            border-radius: 10px;
+        }
+
+        h1, h3, h5 {
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+            .stat-card {
+                padding: 1.5rem;
+            }
+            .post-preview {
+                width: 60px;
+                height: 60px;
+            }
         }
     </style>
 </head>
@@ -176,7 +271,7 @@
 
         <div class="posts-table-container" id="postsSection" style="display: none;">
             <h3 class="mb-4">Recent Posts</h3>
-            <table class="table table-striped" id="postsTable">
+            <table class="table table-hover" id="postsTable">
                 <thead>
                     <tr>
                         <th>Preview</th>
@@ -187,7 +282,8 @@
                         <th>Link</th>
                     </tr>
                 </thead>
-                <tbody></tbody>
+                <tbody id="postsTableBody">
+                </tbody>
             </table>
         </div>
     </div>
@@ -207,12 +303,10 @@
                 });
                 const data = await response.json();
 
-                // Show sections
                 document.getElementById('statsGrid').style.display = 'grid';
                 document.getElementById('visualizations').style.display = 'block';
                 document.getElementById('postsSection').style.display = 'block';
 
-                // Update stats
                 if (data.profile) {
                     document.getElementById('statName').textContent = data.profile.Name || 'N/A';
                     document.getElementById('statBio').textContent = data.profile.Bio || 'N/A';
@@ -221,24 +315,22 @@
                     document.getElementById('statFollowing').textContent = data.profile.Following || 'N/A';
                 }
 
-                // Update posts table
-                const postsTbody = document.querySelector('#postsTable tbody');
+                const postsTbody = document.getElementById('postsTableBody');
                 postsTbody.innerHTML = '';
                 if (data.posts && data.posts.length > 0) {
                     data.posts.forEach(post => {
                         const row = `
                             <tr>
-                                <td><img src="${post.image_url}" alt="Post" style="width: 50px; border-radius: 5px;"></td>
-                                <td>${post.caption || 'No Caption'}</td>
-                                <td>${post.likes || 0}</td>
-                                <td>${post.commenters}</td>
-                                <td>${post.hashtags.join(', ') || 'None'}</td>
+                                <td><img src="${post.image_url}" alt="Post" class="post-preview"></td>
+                                <td class="post-caption">${post.caption || 'No Caption'}</td>
+                                <td class="post-stats">${post.likes || 0}</td>
+                                <td class="post-stats">${post.comments || 0}</td>
+                                <td>${post.hashtags.map(tag => `<span class="hashtag-badge">${tag}</span>`).join('') || 'None'}</td>
                                 <td><a href="${post.post_url}" target="_blank" class="btn btn-sm btn-primary">View</a></td>
                             </tr>`;
                         postsTbody.innerHTML += row;
                     });
 
-                    // Update visualizations
                     updateCharts(data.posts);
                 }
             } catch (error) {
@@ -247,11 +339,9 @@
         });
 
         function updateCharts(posts) {
-            // Destroy existing charts if they exist
             if (likesChart) likesChart.destroy();
             if (hashtagsChart) hashtagsChart.destroy();
 
-            // Likes Chart
             const likesCtx = document.getElementById('likesChart').getContext('2d');
             likesChart = new Chart(likesCtx, {
                 type: 'bar',
@@ -260,8 +350,8 @@
                     datasets: [{
                         label: 'Likes per Post',
                         data: posts.map(post => post.likes),
-                        backgroundColor: 'rgba(0, 123, 255, 0.6)',
-                        borderColor: 'rgba(0, 123, 255, 1)',
+                        backgroundColor: 'rgba(0, 149, 246, 0.6)',
+                        borderColor: 'rgba(0, 149, 246, 1)',
                         borderWidth: 1
                     }]
                 },
@@ -273,7 +363,6 @@
                 }
             });
 
-            // Hashtags Chart
             const hashtagCount = {};
             posts.forEach(post => {
                 post.hashtags.forEach(tag => {
@@ -289,8 +378,8 @@
                     datasets: [{
                         data: Object.values(hashtagCount),
                         backgroundColor: [
-                            '#007bff', '#6610f2', '#6f42c1', '#e83e8c',
-                            '#dc3545', '#fd7e14', '#ffc107', '#28a745'
+                            '#0095f6', '#405de6', '#5851db', '#833ab4',
+                            '#c13584', '#e1306c', '#fd1d1d', '#f77737'
                         ]
                     }]
                 },
