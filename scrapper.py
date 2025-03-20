@@ -1,39 +1,26 @@
 import json
 from playwright.sync_api import sync_playwright
-from config import TARGET_USERNAMES
+from config import TARGET_USERNAMES, MOBILE_VIEWPORT, MOBILE_USER_AGENT, PROXY
 from anti_detect import apply_anti_detection
 import logging
 import time
 import re
+import random
 
-# Setting up the logger for the script
 logger = logging.getLogger(__name__)
 
-# Function to convert Instagram number strings (followers, posts, etc.) into integer values
 def convert_insta_number(num_str):
     try:
-        # Cleaning the number string by removing irrelevant words like 'followers', 'following', and 'posts'
         clean = num_str.lower().replace('followers', '').replace('following', '').replace('posts', '').strip()
-        
-        # Convert numbers with 'm' for millions or 'k' for thousands into actual integers
         if 'm' in clean:
             return int(float(clean.replace('m', '')) * 1_000_000)
         if 'k' in clean:
             return int(float(clean.replace('k', '')) * 1_000)
-        
-        # Return the number after removing commas
         return int(clean.replace(',', ''))
     except:
-        # In case of any error, return the original string
         return num_str
 
-# Function to scrape Instagram profile data
-def scrape_profile(page, username):
-    url = f"https://www.instagram.com/{username}/"
-    print(f"Navigating to {url}")
-    page.goto(url)  # Go to the Instagram profile URL
-    page.wait_for_timeout(5000)  # Wait for page to load
-
+def handle_popups(page):
     popup_closed = False
     try:
         # Attempt to close any login popups
@@ -46,40 +33,37 @@ def scrape_profile(page, username):
     except Exception as e:
         print("Popup close error:", e)
 
-    # Extract profile details such as name, bio, and stats
+def scrape_profile(page, username, context):
+    url = f"https://www.instagram.com/{username}/"
+    print(f"Navigating to {url}")
+    
     try:
-        print("Extracting profile details...")
-        name_element = page.locator("header h2").first
-        name = name_element.inner_text() if name_element else "N/A"
-        
-        # Fallback selector for bio
-        bio_element = page.locator("header section div").nth(1)
-        bio = bio_element.inner_text() if bio_element else "N/A"
-        
-        # Extract stats (posts, followers, following)
-        stats_elements = page.locator("header section ul li").all()
-        posts = convert_insta_number(stats_elements[0].inner_text()) if len(stats_elements) > 0 else "N/A"
-        followers = convert_insta_number(stats_elements[1].inner_text()) if len(stats_elements) > 1 else "N/A"
-        following = convert_insta_number(stats_elements[2].inner_text()) if len(stats_elements) > 2 else "N/A"
-
-        # Store extracted data in a dictionary
-        profile_data = {
-            "Name": name,
-            "Bio": bio,
-            "Posts": posts,
-            "Followers": followers,
-            "Following": following
-        }
-        print("Successfully extracted profile details!")
-        print(json.dumps(profile_data, indent=4))  # Print profile data in JSON format
+        page.goto(url, timeout=120000, wait_until="networkidle")
+        page.wait_for_selector("header section", state="attached", timeout=120000)
+        handle_popups(page)
     except Exception as e:
-        print(f"Error extracting profile: {e}")
+        print(f"🚨 Main profile navigation failed: {e}")
+        return None
+    # Profile scraping
+    try:
+        stats_elements = page.locator("header section ul li").all()
+        profile_data = {
+            "Name": page.locator("header h2").first.inner_text(),
+            "Bio": page.locator("header section div").nth(1).inner_text(),  # Fixed bio extraction
+            "Posts": convert_insta_number(stats_elements[0].inner_text()) if len(stats_elements) > 0 else "N/A",
+            "Followers": convert_insta_number(stats_elements[1].inner_text()) if len(stats_elements) > 1 else "N/A",
+            "Following": convert_insta_number(stats_elements[2].inner_text()) if len(stats_elements) > 2 else "N/A"
+        }
+        print("✅ Profile data extracted")
+    except Exception as e:
+        print(f"❌ Profile extraction error: {e}")
+        return None
 
-    # Parameters for post extraction (desired post count and scroll attempts)
-    desired_post_count = 20
+    # Post link collection with retries
+    post_links = []
+    desired_post_count = 15
     max_scroll_attempts = 3
     scroll_attempts = 0
-
     # Scroll and try to find enough posts (maximum attempts)
     while scroll_attempts < max_scroll_attempts:
         post_elements = page.locator("a[href*='/p/'], a[href*='/reel/']").all()
@@ -127,95 +111,193 @@ def scrape_profile(page, username):
         print("No posts found.")
         return []  # Return empty if no posts are found
 
+    # Mobile context setup
+    mobile_context = context.browser.new_context(
+        user_agent=MOBILE_USER_AGENT,
+        viewport=MOBILE_VIEWPORT,
+        is_mobile=True,
+        has_touch=True,
+        java_script_enabled=True,
+        locale="en-US",
+        timezone_id="America/New_York",
+        proxy=PROXY if PROXY else None
+    )
+    
     post_data = []
-
-    # Scrape data for each post
+    
     for link in post_links[:desired_post_count]:
+        mobile_page = None
         try:
-            print(f"Scraping post: {link}")
-            page.goto(link, timeout=60000)  # Navigate to each post
-            page.wait_for_timeout(5000)  # Wait for the page to load
+            mobile_page = mobile_context.new_page()
+            apply_anti_detection(mobile_page)
+            mobile_page.set_default_navigation_timeout(120000)
+            mobile_page.set_default_timeout(30000)
 
-            # Extract post caption, stripping out hashtags
-            try:
-                caption_element = page.locator("div.xt0psk2 h1").first
-                raw_caption = caption_element.inner_text() if caption_element else ""
-                caption = ' '.join(word for word in raw_caption.split() if not word.startswith('#'))
-            except Exception as e:
-                print(f"Caption error for {link}: {e}")
-                caption = "No Caption"
+            # Navigate with retries
+            for retry in range(2):
+                try:
+                    response = mobile_page.goto(
+                        link, 
+                        wait_until="networkidle",
+                        referer=f"https://www.instagram.com/{username}/"
+                    )
+                    if response.status >= 400:
+                        raise Exception(f"HTTP Error {response.status}")
+                    break
+                except Exception as e:
+                    if retry == 1:
+                        raise
+                    print(f"Retrying post navigation: {e}")
+                    mobile_page.wait_for_timeout(5000)
 
-            # Extract likes count for the post
-            try:
-                likes_element = page.locator("section span:has-text('likes')").first
-                raw_likes = likes_element.inner_text() if likes_element else "0"
-                likes = int(raw_likes.replace(',', '').split()[0]) if 'likes' in raw_likes else 0
-            except Exception as e:
-                print(f"Likes error for {link}: {e}")
-                likes = 0
-
-            # Extract commenters (top 20)
-            try:
-                commenters = []
-                comments_elements = page.locator("ul li").all()
-                for comment in comments_elements[:]:
-                    raw_comment = comment.inner_text()
-                    cleaned = ' '.join(
-                        part.strip()
-                        for part in raw_comment.split('\n')[0].split()
-                        if not part.startswith(('#')) and not part.isdigit()
-                    ).replace('Reply', ' ').strip()
-                    if cleaned and len(cleaned) > 3:
-                        commenters.append(cleaned)
-            except Exception as e:
-                print(f"Commenters error for {link}: {e}")
-                commenters = []
-
-            # Extract hashtags used in the post
-            try:
-                hashtags = []
-                hashtag_links = page.locator("a[href*='/explore/tags/']").all()
-                hashtags += [link.inner_text() for link in hashtag_links if link.inner_text().startswith('#')]
-                hashtags = list(set(hashtags))  # Remove duplicates
-            except Exception as e:
-                print(f"Hashtags error for {link}: {e}")
-                hashtags = []
-
-            # Extract image URL from the post
-            try:
-                image_element = page.locator("article img").first
-                image_url = image_element.get_attribute("src") if image_element else "No Image"
-            except Exception as e:
-                print(f"Image URL error for {link}: {e}")
-                image_url = "No Image"
-
-            # Append the post data to the list
-            post_data.append({
+            # Content verification
+            mobile_page.wait_for_function(
+                """() => document.querySelector('article') || document.querySelector('video')"""
+            )
+            
+            post_details = {
                 "post_url": link,
-                "caption": caption,
-                "likes": likes,
-                "commenters": commenters[:30],
-                "hashtags": hashtags,
-                "image_url": image_url
-            })
-        except Exception as e:
-            print(f"Error scraping {link}: {e}")
+                "caption": "No Caption",
+                "likes": 0,
+                "comments_count": 0,
+                "hashtags": [],
+                "media_url": "No Media"
+            }
 
+            # Likes extraction
+            try:
+                likes_element = mobile_page.locator(
+                    'span.xdj266r.x11i5rnm.xat24cr.x1mh8g0r:visible'
+                ).first
+                post_details["likes"] = convert_insta_number(likes_element.inner_text())
+            except Exception as e:
+                print(f"⚠️ Likes error: {e}")
+
+            # Comments handling
+            try:
+                # Updated selector to find the comment count span that includes the text "View all X comments"
+                comments_selector = 'span:has-text("View all")'
+                comments_element = mobile_page.locator(comments_selector).first
+
+                if comments_element:
+                    # Extracting the count text (e.g., "View all 1234 comments")
+                    count_text = comments_element.inner_text()
+        
+                    # Using regex to capture the number of comments from the string like "View all 1234 comments"
+                    numbers = re.findall(r'[\d,]+', count_text)
+        
+                    if numbers:
+                        # Clean the number and convert it to an integer
+                        post_details["comments_count"] = int(numbers[-1].replace(',', ''))
+                else:
+                    post_details["comments_count"] = 0
+        
+                print(f"Comments Count: {post_details['comments_count']}")
+            except Exception as e:
+                print(f"⚠️ Comments error: {e}")
+            
+            # Caption and Hashtags extraction
+            try:
+                # Locate the caption within the h1 element (initial part)
+                caption_element = mobile_page.locator('h1._ap3a').first
+                caption_text = caption_element.inner_text() if caption_element else "No Caption"
+    
+                # Check if the caption is truncated (by looking for the "more" button)
+                more_button = mobile_page.locator('div[aria-disabled="false"][role="button"]').first
+                if more_button.is_visible():
+                    print("Caption is truncated, clicking 'More' to reveal the full caption.")
+        
+                    # Wait for the "more" button to be clickable
+                    more_button.wait_for(state="visible", timeout=10000)  # wait up to 5 seconds
+        
+                    # Click the "more" button to reveal the full caption
+                    more_button.click()
+
+                    # Wait for the full caption to appear after clicking the "more" button
+                    mobile_page.wait_for_timeout(5000)  # wait for 2 seconds (adjust this if needed)
+        
+                    # Re-fetch the full caption after the "more" button click
+                    caption_element = mobile_page.locator('h1._ap3a').first
+                    caption_text = caption_element.inner_text() if caption_element else "No Caption"
+    
+                # Store the full caption in post_details
+                post_details["caption"] = caption_text
+
+                # Extract hashtags using regex
+                hashtags = re.findall(r'#\w+', caption_text)
+                post_details["hashtags"] = hashtags
+
+                # Print the extracted information
+                print(f"Caption: {caption_text}")
+                print(f"Hashtags: {hashtags}")
+
+            except Exception as e:
+                print(f"⚠️ Caption and Hashtags extraction error: {e}")
+
+
+            
+            
+            try:
+                media = mobile_page.locator('img.x5yr21d, video.x1lliihq').first
+                post_details["media_url"] = (
+                    media.get_attribute('src') 
+                    or media.get_attribute('poster') 
+                    or media.get_attribute('srcset').split()[0]
+                )
+            except Exception as e:
+                print(f"⚠️ Media error: {e}")
+
+            post_data.append(post_details)
+            print(f"✅ Processed post: {link}")
+
+        except Exception as e:
+            print(f"🚨 Post processing failed: {str(e)[:200]}")
+            if mobile_page:
+                try:
+                    mobile_page.screenshot(path=f"error_{int(time.time())}.png")
+                except:
+                    pass
+        finally:
+            if mobile_page:
+                mobile_page.close()
+
+    mobile_context.close()
     return {
         "profile": profile_data,
         "posts": post_data
     }
 
-# Function to scrape an Instagram profile by username using the provided context
 def scrape_instagram_profile(username, context):
     try:
-        # Create a new page in the browser context and apply anti-detection techniques
         page = context.new_page()
         apply_anti_detection(page)
-        return scrape_profile(page, username)  # Scrape the profile using the page
+        page.set_default_navigation_timeout(120000)
+        return scrape_profile(page, username, context)
     except Exception as e:
-        logger.error(f"❌ Browser error: {str(e)}")
-        return None  # Return None in case of any error
+        logger.error(f"🔥 Critical error: {str(e)}")
+        return None
     finally:
-        page.close()  # Ensure the page is closed after scraping
+        try:
+            page.close()
+        except:
+            pass
+
+# Main execution
+if __name__ == "__main__":
+    with sync_playwright() as p:
+        browser = p.chromium.launch(**config.BROWSER_CONFIG)
+        context = browser.new_context(**config.BROWSER_CONFIG.get("context", {}))
+        
+        results = []
+        for username in config.TARGET_USERNAMES:
+            print(f"\n=== Scraping {username} ===")
+            data = scrape_instagram_profile(username, context)
+            if data:
+                results.append(data)
+                with open(f"{username}_data.json", "w") as f:
+                    json.dump(data, f, indent=2)
+                print(f"✅ Saved data for {username}")
+        
+        context.close()
+        browser.close()
 
