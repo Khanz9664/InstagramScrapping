@@ -1,5 +1,5 @@
-# Use the official Playwright image that matches your version
-FROM mcr.microsoft.com/playwright/python:v1.51.1-jammy
+# Use the latest compatible Playwright image
+FROM mcr.microsoft.com/playwright/python:latest-jammy
 
 # Set the working directory
 WORKDIR /app
@@ -10,10 +10,10 @@ COPY . .
 # Install Python dependencies
 RUN pip install -r requirements.txt
 
-# Ensure Playwright browsers and dependencies are installed
+# Ensure Playwright browsers and system dependencies are installed
 RUN playwright install && playwright install-deps
 
-# Expose the correct port
+# Expose the correct port (use Railway's PORT)
 EXPOSE 8080
 
 # Run the Flask application
