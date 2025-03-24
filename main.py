@@ -7,6 +7,7 @@ from config import BROWSER_CONFIG, VIEWPORT_CONFIG, get_random_user_agent
 from data_handler import save_to_file  # Added to restore file-saving functionality
 import random
 import logging
+import os
 
 def main():
     print("Starting Instagram Scraper (No Login Required)...")
@@ -56,5 +57,7 @@ def scrape():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))  # Use the port Render provides
+    app.run(debug=False, host="0.0.0.0", port=port)  # Bind to all network interfaces
+
 
