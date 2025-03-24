@@ -1,5 +1,5 @@
-# Use the latest Playwright image from GitHub's container registry
-FROM ghcr.io/microsoft/playwright/python:v1.51.0
+# Use a public Ubuntu-based Playwright image from Playwright's official source
+FROM mcr.microsoft.com/playwright/python:latest
 
 # Set the working directory inside the container
 WORKDIR /app
