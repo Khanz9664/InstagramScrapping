@@ -54,6 +54,8 @@ def scrape():
         
         return jsonify(scraped_data)
 
-if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)  # Updated host and port
+import os
 
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))  # Use Railway's PORT if available
+    app.run(debug=False, host="0.0.0.0", port=port)
