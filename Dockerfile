@@ -1,5 +1,5 @@
-# Use an official Playwright image with necessary dependencies
-FROM mcr.microsoft.com/playwright/python:v1.51.1-jammy
+# Use the latest Playwright image from GitHub's container registry
+FROM ghcr.io/microsoft/playwright/python:v1.51.0
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -13,8 +13,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Ensure Playwright browsers and dependencies are installed
 RUN playwright install --with-deps
 
-# Expose the correct port
+# Expose the Flask port (Render defaults to 8080)
 EXPOSE 8080
 
-# Run your Flask application
+# Start the Flask application
 CMD ["python", "main.py"]
