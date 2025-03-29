@@ -15,12 +15,14 @@ DELAY_CONFIG = {
 }
 
 BROWSER_CONFIG = {
-    "headless": True,  # Modified to True
-    "slow_mo": 150,
+    "headless": True,
     "args": [
-        "--disable-blink-features=AutomationControlled",
-        "--no-sandbox",
-        "--disable-web-security"
+        "--disable-gpu",
+        "--single-process",
+        "--no-zygote",
+        "--disable-dev-shm-usage",
+        "--disable-setuid-sandbox",
+        "--no-first-run"
     ]
 }
 
