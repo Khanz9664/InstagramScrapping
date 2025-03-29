@@ -9,7 +9,7 @@ import logging
 import os
 
 # Initialize Flask application
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='')
 
 # Set up logging
 logger = logging.getLogger(__name__)
