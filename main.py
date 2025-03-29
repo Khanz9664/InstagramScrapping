@@ -79,6 +79,10 @@ def handle_exception(error):
 def handle_bad_request(error):
     return jsonify({'error': 'Bad request: ' + str(error)}), 400
 
+# Remove the existing __main__ block and replace with:
+application = app  # Required for Gunicorn compatibility
+
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # Use the port Render provides
-    app.run(debug=True, host="0.0.0.0", port=port)  # Bind to all network interfaces
+    # This block should ONLY be used for local development
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=False, host="0.0.0.0", port=port)  # Always debug=False in container
