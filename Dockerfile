@@ -1,7 +1,14 @@
 # Use a Python base image with a slim version to minimize the image size
 FROM python:3.11-slim
 
-# Install system dependencies needed by Playwright (and Chromium browser)
+# Update package lists and install common dependencies
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    wget \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install the Playwright dependencies
 RUN apt-get update && apt-get install -y \
     libgtk-4-1 \
     libgraphene-1.0-0 \
@@ -12,15 +19,11 @@ RUN apt-get update && apt-get install -y \
     libsecret-1-0 \
     libmanette-0.2-0 \
     libgles2 \
-    ca-certificates \
-    wget \
-    curl \
-    && rm -rf /var/lib/apt/lists/* \
-    # Check that the libraries are correctly installed
-    && apt-get clean \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends \
-    libxss1 libappindicator3-1 libasound2 libnss3
+    libxss1 \
+    libappindicator3-1 \
+    libasound2 \
+    libnss3 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory in the container
 WORKDIR /app
@@ -28,12 +31,11 @@ WORKDIR /app
 # Copy the requirements file and install dependencies
 COPY requirements.txt .
 
-# Install the dependencies using pip
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install Playwright and browsers
-RUN pip install playwright \
-    && playwright install
+RUN pip install playwright && playwright install
 
 # Copy the rest of the application code into the container
 COPY . .
