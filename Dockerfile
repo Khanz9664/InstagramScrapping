@@ -12,8 +12,8 @@ RUN apt-get update && apt-get install -y \
 RUN apt-get update && apt-get install -y \
     libgtk-4-1 \
     libgraphene-1.0-0 \
-    libgstgl-1.0-0 \
-    libgstcodecparsers-1.0-0 \
+    libgstreamer-gl1.0-0 \  # Updated package name
+    gstreamer1.0-plugins-base \
     libavif15 \
     libenchant-2-2 \
     libsecret-1-0 \
