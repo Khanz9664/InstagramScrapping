@@ -13,7 +13,14 @@ RUN apt-get update && apt-get install -y \
     libmanette-0.2-0 \
     libgles2 \
     ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+    wget \
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    # Check that the libraries are correctly installed
+    && apt-get clean \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+    libxss1 libappindicator3-1 libasound2 libnss3
 
 # Set the working directory in the container
 WORKDIR /app
