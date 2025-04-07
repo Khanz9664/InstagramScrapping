@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install the Playwright dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y gstreamer1.0-plugins-base
     libgtk-4-1 \
     libgraphene-1.0-0 \
     libgstreamer-gl1.0-0 \  # Updated package name
