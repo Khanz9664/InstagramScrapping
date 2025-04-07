@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eux
 
-# Install missing dependencies for Playwright
+# Install system dependencies for Playwright
 apt-get update && apt-get install -y \
   libgtk-4-1 \
   libgraphene-1.0-0 \
@@ -13,5 +13,8 @@ apt-get update && apt-get install -y \
   libmanette-0.2-0 \
   libgles2
 
-# Install Playwright browsers
-npx playwright install
+# Install Playwright and its browsers
+pip install playwright
+echo "Installing Playwright browsers..."
+playwright install
+echo "Playwright browsers installed successfully!"
