@@ -7,7 +7,7 @@ from config import BROWSER_CONFIG, VIEWPORT_CONFIG, get_random_user_agent
 from data_handler import save_to_file  # Added to restore file-saving functionality
 import random
 import logging
-
+import os
 def main():
     print("Starting Instagram Scraper (No Login Required)...")
 app = Flask(__name__)
@@ -54,9 +54,6 @@ def scrape():
         
         return jsonify(scraped_data)
 
-
-
 if __name__ == "__main__":
-    # This block should ONLY be used for local development
-    port = int(os.environ.get("PORT", 5000))
-    app.run(debug=False, host="0.0.0.0", port=port)  # Always debug=False in container
+    port = int(os.environ.get("PORT", 5000))  
+    app.run(host="0.0.0.0", port=port, debug=True)
